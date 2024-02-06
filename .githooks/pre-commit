@@ -1,0 +1,24 @@
+#!/bin/bash
+
+exec 1>&2
+
+while read st file; do
+    # skip deleted files
+    if [ "$st" == 'D' ]
+    then
+      echo "skip deleted file."
+      continue
+    fi
+
+    # do a check only on the perl files
+    if [[ "$file" =~ "vault" ]]
+    then
+        echo "Process Vault File $file"
+        ansible-vault view $file > /dev/null 2>&1
+        if [ $? != 0 ]
+        then
+          echo "Vault file, $file, not encrypted. Refusing to commit!"
+          exit 1
+        fi
+    fi
+done < <(git diff --cached --name-status)
